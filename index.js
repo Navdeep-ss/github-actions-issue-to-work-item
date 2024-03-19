@@ -237,7 +237,14 @@ async function create(payload, adoClient) {
 				rel: "Hyperlink",
 				url: payload.issue.html_url,
 			},
-		}
+		},
+		{
+			// Add this to avoid false positives in secret scanning from the
+			// way image links are created in GH.
+			op: "add",
+			path: "/fields/System.History",
+			value: "**BYPASS_SECRET_SCANNING**"
+		 }
 	];
 
 	if (core.getInput('parent_work_item')) {
@@ -366,6 +373,10 @@ async function findAdoIdFromAdo(ghIssueId, adoClient) {
     // The logic below will extract the last instance of this format in the issue body.
 
 	console.log("Looking for ADO link in issue body");
+	if (!issueBody) {
+		console.log("No issue body found.");
+		return -1;
+	}
     const matches = issueBody.matchAll(/AB#([0-9]+)/g);
     const lastRef = [...matches].pop();
     if (!lastRef) {
