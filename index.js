@@ -1,7 +1,7 @@
 const core = require(`@actions/core`);
 const github = require(`@actions/github`);
 const azdev = require(`azure-devops-node-api`);
-//const azidentity = require(`@azure/identity`);
+const azidentity = require(`@azure/identity`);
 
 async function main() {
 	const payload = github.context.payload;
