@@ -11,15 +11,34 @@ async function main() {
 	try {
 		let adoAuthHandler = null;
 
-		// Otherwise, assume that the Azure CLI has already authenticated using
-		// `az login`.
+		console.log("Getting the Federated Credential token from az login");
 		const credential = new AzureCliCredential();
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
 		const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
-		if (accessToken.token) { console.log("Got ADO token"); }
-		adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
+		if (accessToken.token) { console.log("Got token from az login"); }
 
-		const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
+		
+		// Make a REST call to the ADO API to get the list of work items
+		console.log("\nConnecting to ADO using REST API directly");
+		const url = "https://dev.azure.com/" + core.getInput('ado_organization') + core.getInput('ado_project');
+		const apiurl = url + "/_apis/wit/workitems/49701976?api-version=7.1";
+		console.log("API URL: " + apiurl);
+		let headers = new Headers();
+		headers.append('Authorization', 'Bearer ' + accessToken.token);
+		headers.append('Accept', 'application/json');
+		console.log("Headers: " + headers);
+		const response = await fetch(apiurl, { method: 'GET', headers: headers });
+		const data = await response.json();
+		console.log("Data: " + data);
+
+
+
+
+
+		//adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
+
+
+		
 		const adoConnection = new azdev.WebApi(orgUrl, adoAuthHandler);
 		adoClient = await adoConnection.getWorkItemTrackingApi();
 	} catch (e) {
