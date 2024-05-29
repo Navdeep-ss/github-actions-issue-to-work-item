@@ -1,7 +1,7 @@
 const core = require(`@actions/core`);
 const github = require(`@actions/github`);
 const azdev = require(`azure-devops-node-api`);
-const azidentity = require(`@azure/identity`);
+//const azidentity = require(`@azure/identity`);
 
 async function main() {
 	const payload = github.context.payload;
@@ -160,10 +160,10 @@ async function connectToAdo() {
 		// TODO: Add fallback here to use PAT if available.
 		// Use Personal Access Token (PAT) for authentication if set
 		if (process.env.ado_token) {
-			const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
 			adoAuthHandler = azdev.getPersonalAccessTokenHandler(process.env.ado_token);
 		}
 
+		const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
 		const adoConnection = new azdev.WebApi(orgUrl, adoAuthHandler);
 		adoClient = await adoConnection.getWorkItemTrackingApi();
 	} catch (e) {
