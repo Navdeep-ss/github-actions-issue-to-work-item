@@ -152,16 +152,16 @@ async function connectToAdo() {
 
 		// Otherwise, assume that the Azure CLI has already authenticated using
 		// `az login`.
-		//const credential = new AzureCliCredential();
+		const credential = new AzureCliCredential();
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
-		//const accessToken = await credential.getToken("api://AzureADTokenExchange");
-		//adoAuthHandler = azdev.getBearerHandler(accessToken.token);
+		const accessToken = await credential.getToken("api://AzureADTokenExchange");
+		adoAuthHandler = azdev.getBearerHandler(accessToken.token);
 
 		// TODO: Add fallback here to use PAT if available.
 		// Use Personal Access Token (PAT) for authentication if set
-		if (process.env.ado_token) {
-			adoAuthHandler = azdev.getPersonalAccessTokenHandler(process.env.ado_token);
-		}
+		//if (process.env.ado_token) {
+		//	adoAuthHandler = azdev.getPersonalAccessTokenHandler(process.env.ado_token);
+		//}
 
 		const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
 		const adoConnection = new azdev.WebApi(orgUrl, adoAuthHandler);
