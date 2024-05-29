@@ -154,7 +154,7 @@ async function connectToAdo() {
 		// `az login`.
 		const credential = new AzureCliCredential();
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
-		const accessToken = await credential.getToken("api://AzureADTokenExchange");
+		const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
 		adoAuthHandler = azdev.getBearerHandler(accessToken.token);
 
 		// TODO: Add fallback here to use PAT if available.
