@@ -1,7 +1,7 @@
 const core = require(`@actions/core`);
 const github = require(`@actions/github`);
 const azdev = require(`azure-devops-node-api`);
-const azidentity = require(`@azure/identity`);
+const { AzureCliCredential } = require(`@azure/identity`);
 
 async function main() {
 	const payload = github.context.payload;
@@ -152,7 +152,7 @@ async function connectToAdo() {
 
 		// Otherwise, assume that the Azure CLI has already authenticated using
 		// `az login`.
-		//const credential = new azidentity.AzureCliCredential();
+		//const credential = new AzureCliCredential();
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
 		//const accessToken = await credential.getToken("api://AzureADTokenExchange");
 		//adoAuthHandler = azdev.getBearerHandler(accessToken.token);
