@@ -20,6 +20,7 @@
   "dependencies": {
     "@actions/core": "^1.2.3",
     "@actions/github": "^2.1.1",
+    "@azure/identity": "^4.2.0",
     "azure-devops-node-api": "^10.1.0"
   }
 }

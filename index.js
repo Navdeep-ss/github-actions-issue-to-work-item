@@ -1,6 +1,7 @@
 const core = require(`@actions/core`);
 const github = require(`@actions/github`);
 const azdev = require(`azure-devops-node-api`);
+const azidentity = require(`@azure/identity`);
 
 async function main() {
 	const payload = github.context.payload;
@@ -147,8 +148,22 @@ async function connectToAdo() {
 
 	// Connect to ADO
 	try {
-		const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
-		const adoAuthHandler = azdev.getPersonalAccessTokenHandler(process.env.ado_token);
+		let adoAuthHandler = null;
+
+		// Otherwise, assume that the Azure CLI has already authenticated using
+		// `az login`.
+		//const credential = new azidentity.AzureCliCredential();
+		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
+		//const accessToken = await credential.getToken("api://AzureADTokenExchange");
+		//adoAuthHandler = azdev.getBearerHandler(accessToken.token);
+
+		// TODO: Add fallback here to use PAT if available.
+		// Use Personal Access Token (PAT) for authentication if set
+		if (process.env.ado_token) {
+			const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
+			adoAuthHandler = azdev.getPersonalAccessTokenHandler(process.env.ado_token);
+		}
+
 		const adoConnection = new azdev.WebApi(orgUrl, adoAuthHandler);
 		adoClient = await adoConnection.getWorkItemTrackingApi();
 	} catch (e) {
