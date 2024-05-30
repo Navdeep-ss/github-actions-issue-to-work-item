@@ -31,7 +31,7 @@ async function main() {
 				'Accept': 'application/json'
 			} 
 		});
-		console.log("Response: " + response);
+		console.log("Response: " + JSON.stringify(response));
 		const data = await response.json();
 		console.log("Data: " + data);
 
