@@ -23,7 +23,6 @@ async function main() {
 		const url = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		const apiurl = url + "/_apis/wit/workitems/49701976?api-version=7.1";
 		console.log("API URL: " + apiurl);
-		console.log("Headers: " + headers);
 		const response = await fetch(apiurl, { 
 			method: 'GET', 
 			headers: {
