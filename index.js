@@ -20,14 +20,17 @@ async function main() {
 		
 		// Make a REST call to the ADO API to get the list of work items
 		console.log("\nConnecting to ADO using REST API directly");
-		const url = "https://dev.azure.com/" + core.getInput('ado_organization') + core.getInput('ado_project');
+		const url = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		const apiurl = url + "/_apis/wit/workitems/49701976?api-version=7.1";
 		console.log("API URL: " + apiurl);
-		let headers = new Headers();
-		headers.append('Authorization', 'Bearer ' + accessToken.token);
-		headers.append('Accept', 'application/json');
 		console.log("Headers: " + headers);
-		const response = await fetch(apiurl, { method: 'GET', headers: headers });
+		const response = await fetch(apiurl, { 
+			method: 'GET', 
+			headers: {
+				'Authorization': 'Bearer ' + accessToken.token,
+				'Accept': 'application/json'
+			} 
+		});
 		const data = await response.json();
 		console.log("Data: " + data);
 
