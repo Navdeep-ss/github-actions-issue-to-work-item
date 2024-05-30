@@ -33,7 +33,7 @@ async function main() {
 		});
 		console.log("Response status: " + response.status);
 		console.log("Response: " + JSON.stringify(response));
-		const data = await response.json();
+		const data = await response.text();
 		console.log("Data: " + data);
 
 
