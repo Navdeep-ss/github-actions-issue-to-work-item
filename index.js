@@ -18,33 +18,31 @@ async function main() {
 		const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
 		if (accessToken.token) { console.log("Got token from az login"); }
 
+		const projecturl = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		
 		// Make a REST call to the ADO API to get the list of work items
-		console.log("\nConnecting to ADO using REST API directly");
-		const url = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
-		const apiurl = url + "/_apis/wit/workitems/49701976?api-version=7.1";
-		console.log("API URL: " + apiurl);
-		const response = await fetch(apiurl, { 
-			method: 'GET', 
-			headers: {
-				'Authorization': 'Bearer ' + accessToken.token,
-				'Accept': 'application/json'
-			} 
-		});
-		console.log("Response status: " + response.status);
-		console.log("Response: " + JSON.stringify(response));
-		const data = await response.text();
-		console.log("Data: " + data);
+		// console.log("\nConnecting to ADO using REST API directly");
+		// const apiurl = projecturl + "/_apis/wit/workitems/49701976?api-version=7.1";
+		// console.log("API URL: " + apiurl);
+		// const response = await fetch(apiurl, { 
+		// 	method: 'GET', 
+		// 	headers: {
+		// 		'Authorization': 'Bearer ' + accessToken.token,
+		// 		'Accept': 'application/json'
+		// 	} 
+		// });
+		// console.log("Response status: " + response.status);
+		// console.log("Response: " + JSON.stringify(response));
+		// const data = await response.text();
+		// console.log("Data: " + data);
 
 
-
-
-
-		//adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
+		// Connect to ADO using the Azure DevOps SDK
+		adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
 
 
 		
-		const adoConnection = new azdev.WebApi(orgUrl, adoAuthHandler);
+		const adoConnection = new azdev.WebApi(projecturl, adoAuthHandler);
 		adoClient = await adoConnection.getWorkItemTrackingApi();
 	} catch (e) {
 		console.error(e);
