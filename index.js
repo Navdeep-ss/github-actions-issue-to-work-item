@@ -53,6 +53,7 @@ async function main() {
 
 		console.log("Getting the Work Item Tracking API");
 		adoClient = await adoConnection.getWorkItemTrackingApi();
+		console.log("Got the Work Item Tracking API");
 	} catch (e) {
 		console.error(e);
 		core.setFailed('Could not connect to ADO');
