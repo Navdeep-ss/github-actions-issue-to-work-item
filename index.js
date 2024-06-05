@@ -17,14 +17,9 @@ async function main() {
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
 		const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
 		if (accessToken.token) { console.log("Got token from az login"); }
+		console.log("accessToken: " + JSON.stringify(accessToken));
 		console.log("Token: " + accessToken.token);
-		console.log("Token type: " + accessToken.tokenType);
-		console.log("Token expiresOn: " + accessToken.expiresOn);
 		console.log("Token expiresOnTimestamp: " + accessToken.expiresOnTimestamp);
-		console.log("Token tenantId: " + accessToken.tenantId);
-		console.log("Token scopes: " + accessToken.scopes);
-		console.log("Token tokenClaims: " + accessToken.tokenClaims);
-		console.log("Token tokenClaims: " + JSON.stringify(accessToken.tokenClaims));
 		console.log("Toke0:" + accessToken.token[0]);
 		console.log("Toke1:" + accessToken.token[1]);
 
@@ -51,7 +46,10 @@ async function main() {
 		console.log("\nConnecting to ADO using Azure DevOps SDK");
 		console.log("Using projecturl: " + projecturl);
 		adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
-		const adoConnection = new azdev.WebApi(projecturl, adoAuthHandler);
+		const adoConnection = new azdev.WebApi(projecturl, adoAuthHandler, {
+			allowRedirects: true,
+			ignoreSslError: true
+		});
 
 		console.log("Getting the Work Item Tracking API");
 		adoClient = await adoConnection.getWorkItemTrackingApi();
