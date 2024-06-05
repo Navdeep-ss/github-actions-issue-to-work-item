@@ -40,10 +40,9 @@ async function main() {
 		// Connect to ADO using the Azure DevOps SDK
 		console.log("\nConnecting to ADO using Azure DevOps SDK");
 		adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
-
+		const adoConnection = new azdev.WebApi(projecturl, adoAuthHandler);
 
 		console.log("Getting the Work Item Tracking API");
-		const adoConnection = new azdev.WebApi(projecturl, adoAuthHandler);
 		adoClient = await adoConnection.getWorkItemTrackingApi();
 	} catch (e) {
 		console.error(e);
