@@ -25,7 +25,8 @@ async function main() {
 		console.log("Token scopes: " + accessToken.scopes);
 		console.log("Token tokenClaims: " + accessToken.tokenClaims);
 		console.log("Token tokenClaims: " + JSON.stringify(accessToken.tokenClaims));
-		console.log("Toke:" + accessToken.token[0]);
+		console.log("Toke0:" + accessToken.token[0]);
+		console.log("Toke1:" + accessToken.token[1]);
 
 		const projecturl = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		
