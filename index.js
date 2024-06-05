@@ -39,6 +39,7 @@ async function main() {
 
 		// Connect to ADO using the Azure DevOps SDK
 		console.log("\nConnecting to ADO using Azure DevOps SDK");
+		console.log("Using projecturl: " + projecturl);
 		adoAuthHandler = azdev.getBearerHandler(accessToken.token, true);
 		const adoConnection = new azdev.WebApi(projecturl, adoAuthHandler);
 
