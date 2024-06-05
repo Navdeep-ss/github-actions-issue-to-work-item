@@ -17,6 +17,15 @@ async function main() {
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
 		const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
 		if (accessToken.token) { console.log("Got token from az login"); }
+		console.log("Token: " + accessToken.token);
+		console.log("Token type: " + accessToken.tokenType);
+		console.log("Token expiresOn: " + accessToken.expiresOn);
+		console.log("Token expiresOnTimestamp: " + accessToken.expiresOnTimestamp);
+		console.log("Token tenantId: " + accessToken.tenantId);
+		console.log("Token scopes: " + accessToken.scopes);
+		console.log("Token tokenClaims: " + accessToken.tokenClaims);
+		console.log("Token tokenClaims: " + JSON.stringify(accessToken.tokenClaims));
+		console.log("Toke:" + accessToken.token[0]);
 
 		const projecturl = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		
