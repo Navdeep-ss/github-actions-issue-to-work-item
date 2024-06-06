@@ -22,6 +22,9 @@ async function main() {
 		console.log("Token expiresOnTimestamp: " + accessToken.expiresOnTimestamp);
 		console.log("Toke0:" + accessToken.token[0]);
 		console.log("Toke1:" + accessToken.token[1]);
+		console.log("Toke2:" + accessToken.token[2]);
+		console.log("Toke3:" + accessToken.token[3]);
+		console.log("Toke4:" + accessToken.token[4]);
 
 		const projecturl = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		
