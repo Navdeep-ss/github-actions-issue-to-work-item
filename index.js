@@ -15,7 +15,9 @@ async function main() {
 		console.log("Getting the Federated Credential token from az login");
 		const credential = new AzureCliCredential();
 		// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
-		const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
+		//const scope = "api://AzureADTokenExchange/.default";
+		const scope = "499b84ac-1321-427f-aa17-267ca6975798/.default";
+		const accessToken = await credential.getToken(scope);
 		if (accessToken.token) { console.log("Got token from az login"); }
 		console.log("accessToken: " + JSON.stringify(accessToken));
 		console.log("Token: " + accessToken.token);
