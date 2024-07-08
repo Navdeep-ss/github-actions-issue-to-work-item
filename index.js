@@ -19,14 +19,6 @@ async function main() {
 		const scope = "499b84ac-1321-427f-aa17-267ca6975798/.default";
 		const accessToken = await credential.getToken(scope);
 		if (accessToken.token) { console.log("Got token from az login"); }
-		console.log("accessToken: " + JSON.stringify(accessToken));
-		console.log("Token: " + accessToken.token);
-		console.log("Token expiresOnTimestamp: " + accessToken.expiresOnTimestamp);
-		console.log("Toke0:" + accessToken.token[0]);
-		console.log("Toke1:" + accessToken.token[1]);
-		console.log("Toke2:" + accessToken.token[2]);
-		console.log("Toke3:" + accessToken.token[3]);
-		console.log("Toke4:" + accessToken.token[4]);
 
 		const projecturl = "https://dev.azure.com/" + core.getInput('ado_organization') + "/" + core.getInput('ado_project');
 		
