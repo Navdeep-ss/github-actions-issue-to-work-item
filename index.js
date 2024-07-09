@@ -1,7 +1,6 @@
 const core = require(`@actions/core`);
 const github = require(`@actions/github`);
-const azdev = require(`azure-devops-node-api`);
-const { AzureCliCredential } = require(`@azure/identity`);
+const ado = require('./ado.js');
 
 async function main() {
 	const payload = github.context.payload;
@@ -20,10 +19,6 @@ async function main() {
 }
 
 async function handleIssue(payload) {
-
-	let adoClient = await connectToAdo();
-	if (!adoClient) { return; }
-
 	let adoIdFromIssue = await findAdoIdFromIssue(payload.issue.body);
 	if (adoIdFromIssue == -1) {
 		console.log("No corresponding ADO id found in GitHub issue body.");
@@ -33,7 +28,7 @@ async function handleIssue(payload) {
 		console.log("Found existing ADO id in GitHub issue body: " + adoIdFromIssue);
 	}
 
-	let adoWorkItem = await adoClient.getWorkItem(adoIdFromIssue);
+	let adoWorkItem = await ado.getWorkItem(adoIdFromIssue);
 	if (!adoWorkItem) {
 		console.log("Couldn't get ADO work item with id: " + adoIdFromIssue);
 		core.setFailed();
@@ -73,14 +68,7 @@ async function handleIssue(payload) {
 	];
 
 	console.log("Updating tags on ADO work item with tags: " + tags);
-	let updateResult = await adoClient.updateWorkItem(
-		(customHeaders = []),
-		(document = patchDocument),
-		(id = adoIdFromIssue),
-		(project = core.getInput('ado_project')),
-		(validateOnly = false),
-		(bypassRules = false)
-	);
+	let updateResult = await ado.updateWorkItem(adoIdFromIssue, patchDocument);
 	if (!updateResult) {
 		console.log("Couldn't update ADO work item with id: " + adoIdFromIssue);
 		core.setFailed();
@@ -103,13 +91,10 @@ async function handleLabeled(payload) {
 		return;
 	}
 
-	let adoClient = await connectToAdo();
-	if (!adoClient) { return; }
-
 	try {
 		// Search for an existing ADO item with "GitHub #<id>" in the title
 		console.log("Check to see if work item already exists");
-		let adoId = await findAdoIdFromAdo(payload.issue.number, adoClient);
+		let adoId = await findAdoIdFromAdo(payload.issue.number);
 		if (adoId === -1) {
 			console.log("Could not find existing ADO workitem, creating one now");
 		} else {
@@ -123,7 +108,7 @@ async function handleLabeled(payload) {
 		}
 
 		// Try to create a new ADO item
-		let workItem = await create(payload, adoClient);
+		let workItem = await createAdoWorkItem(payload);
 
 		// Success!
 		if (workItem != null || workItem != undefined) {
@@ -141,40 +126,6 @@ async function handleLabeled(payload) {
 		console.log("Error: " + error);
 		core.setFailed();
 	}
-}
-
-async function connectToAdo() {
-	let adoClient = null;
-
-	// Connect to ADO
-	try {
-		let adoAuthHandler = null;
-
-		if (false) {
-			// Otherwise, assume that the Azure CLI has already authenticated using
-			// `az login`.
-			const credential = new AzureCliCredential();
-			// Scope can be AdoAppClientID, or "'api://<API_APPLICATION_ID>/.default'"
-			const accessToken = await credential.getToken("api://AzureADTokenExchange/.default");
-			if (accessToken.token) { console.log("Got ADO token"); }
-			adoAuthHandler = azdev.getBearerHandler(accessToken.token);
-		} else {
-			// TODO: Add fallback here to use PAT if available.
-			// Use Personal Access Token (PAT) for authentication if set
-			if (process.env.ado_token) {
-				adoAuthHandler = azdev.getPersonalAccessTokenHandler(process.env.ado_token);
-			}
-		}
-
-		const orgUrl = "https://dev.azure.com/" + core.getInput('ado_organization');
-		const adoConnection = new azdev.WebApi(orgUrl, adoAuthHandler);
-		adoClient = await adoConnection.getWorkItemTrackingApi();
-	} catch (e) {
-		console.error(e);
-		core.setFailed('Could not connect to ADO');
-		return null;
-	}
-	return adoClient;
 }
 
 function formatTitle(githubIssue) {
@@ -201,7 +152,7 @@ async function formatDescription(payload) {
 		bodyWithMarkdown.data;
 }
 
-async function create(payload, adoClient) {
+async function createAdoWorkItem(payload) {
 	const botMessage = await formatDescription(payload);
 	const shortRepoName = payload.repository.full_name.split("/")[1];
 	let tags = core.getInput("ado_tags") ? core.getInput("ado_tags") + ";" + shortRepoName : shortRepoName;
@@ -300,14 +251,8 @@ async function create(payload, adoClient) {
 
 	try {
 		console.log('Creating work item');
-		workItemSaveResult = await adoClient.createWorkItem(
-			(customHeaders = []),
-			(document = patchDocument),
-			(project = core.getInput('ado_project')),
-			(type = isFeature ? 'Scenario' : 'Bug'),
-			(validateOnly = false),
-			(bypassRules = false)
-		);
+		const workItemType = isFeature ? 'Scenario' : 'Bug';
+		workItemSaveResult = await ado.createWorkItem(workItemType, patchDocument);
 
 		// if result is null, save did not complete correctly
 		if (workItemSaveResult == null) {
@@ -335,7 +280,7 @@ async function create(payload, adoClient) {
 	return workItemSaveResult;
 }
 
-async function findAdoIdFromAdo(ghIssueId, adoClient) {
+async function findAdoIdFromAdo(ghIssueId) {
 	console.log('Connecting to Azure DevOps to find work item for issue #' + ghIssueId);
 
 	const wiql = {
@@ -351,7 +296,7 @@ async function findAdoIdFromAdo(ghIssueId, adoClient) {
 
 	let queryResult = null;
 	try {
-		queryResult = await adoClient.queryByWiql(wiql, { project: core.getInput('ado_project') });
+		queryResult = await ado.queryByWiql(wiql, { project: core.getInput('ado_project') });
 
 		// if query results = null then i think we have issue with the project name
 		if (queryResult == null) {
