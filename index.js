@@ -1,6 +1,6 @@
 const core = require(`@actions/core`);
 const github = require(`@actions/github`);
-import ado from './ado.js';
+import * as ado from './ado.js';
 
 async function main() {
 	const payload = github.context.payload;
