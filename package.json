@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Create a Work Item on an Azure Board when a GitHub Issue is created or updated",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
