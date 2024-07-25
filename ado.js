@@ -2,6 +2,12 @@ const fetch = require('node-fetch');
 const core = require(`@actions/core`);
 const { AzureCliCredential } = require(`@azure/identity`);
 
+const token = await initToken();
+
+const ado_organization = core.getInput('ado_organization');
+const ado_project = core.getInput('ado_project');
+const projecturl = "https://dev.azure.com/" + ado_organization + "/" + ado_project;
+
 async function initToken() {
     // Get the Federated Credential token from az login
     console.log("Getting the Federated Credential token from az login");
@@ -15,7 +21,7 @@ async function initToken() {
     throw new Error("Could not get token from az login");
 }
 
-async function queryByWiql(query) {
+export async function queryByWiql(query) {
     // Make REST call to ADO wiql API
     console.log("\nStarting REST call to ADO wiql API");
     const apiurl = projecturl + "/_apis/wit/wiql?api-version=7.1";
@@ -32,7 +38,7 @@ async function queryByWiql(query) {
     return json;
 }
 
-async function getWorkItem(adoId) {
+export async function getWorkItem(adoId) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: GET");
 	const apiurl = projecturl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
@@ -47,7 +53,7 @@ async function getWorkItem(adoId) {
 	return json;
 }
 
-async function updateWorkItem(adoId, fields) {
+export async function updateWorkItem(adoId, fields) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: PATCH");
 	const apiurl = projecturl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
@@ -64,7 +70,7 @@ async function updateWorkItem(adoId, fields) {
 	return json;
 }
 
-async function createWorkItem(workItemType, fields) {
+export async function createWorkItem(workItemType, fields) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: POST");
 	const apiurl = projecturl + "/_apis/wit/workitems/$" + workItemType + "?api-version=7.1";
@@ -80,16 +86,3 @@ async function createWorkItem(workItemType, fields) {
 	console.log("createWorkItem result: " + JSON.stringify(json));
 	return json;
 }
-
-const token = await initToken();
-
-const ado_organization = core.getInput('ado_organization');
-const ado_project = core.getInput('ado_project');
-const projecturl = "https://dev.azure.com/" + ado_organization + "/" + ado_project;
-
-module.exports = {
-	queryByWiql,
-	getWorkItem,
-	updateWorkItem,
-	createWorkItem
-};
