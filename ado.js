@@ -15,7 +15,7 @@ async function initToken() {
     throw new Error("Could not get token from az login");
 }
 
-export async function queryByWiql(query) {
+async function queryByWiql(query) {
     // Make REST call to ADO wiql API
     console.log("\nStarting REST call to ADO wiql API");
     const apiurl = projecturl + "/_apis/wit/wiql?api-version=7.1";
@@ -32,7 +32,7 @@ export async function queryByWiql(query) {
     return json;
 }
 
-export async function getWorkItem(adoId) {
+async function getWorkItem(adoId) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: GET");
 	const apiurl = projecturl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
@@ -47,7 +47,7 @@ export async function getWorkItem(adoId) {
 	return json;
 }
 
-export async function updateWorkItem(adoId, fields) {
+async function updateWorkItem(adoId, fields) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: PATCH");
 	const apiurl = projecturl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
@@ -64,7 +64,7 @@ export async function updateWorkItem(adoId, fields) {
 	return json;
 }
 
-export async function createWorkItem(workItemType, fields) {
+async function createWorkItem(workItemType, fields) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: POST");
 	const apiurl = projecturl + "/_apis/wit/workitems/$" + workItemType + "?api-version=7.1";
@@ -81,9 +81,15 @@ export async function createWorkItem(workItemType, fields) {
 	return json;
 }
 
-
 const token = await initToken();
 
 const ado_organization = core.getInput('ado_organization');
 const ado_project = core.getInput('ado_project');
 const projecturl = "https://dev.azure.com/" + ado_organization + "/" + ado_project;
+
+module.exports = {
+	queryByWiql,
+	getWorkItem,
+	updateWorkItem,
+	createWorkItem
+};
