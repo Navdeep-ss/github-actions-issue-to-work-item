@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
-const core = require(`@actions/core`);
-const { AzureCliCredential } = require(`@azure/identity`);
+import * as fetch from 'node-fetch';
+import * as core from '@actions/core';
+import { AzureCliCredential } from `@azure/identity`;
 
 const token = await initToken();
 
