@@ -1,5 +1,5 @@
-import * as core from `@actions/core`;
-import * as github from `@actions/github`;
+import * as core from '@actions/core';
+import * as github from '@actions/github';
 import * as ado from './ado.js';
 
 async function main() {

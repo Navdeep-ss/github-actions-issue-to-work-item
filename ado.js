@@ -1,6 +1,6 @@
 import * as fetch from 'node-fetch';
 import * as core from '@actions/core';
-import { AzureCliCredential } from `@azure/identity`;
+import { AzureCliCredential } from '@azure/identity';
 
 const token = await initToken();
 
