@@ -65,7 +65,7 @@ export async function updateWorkItem(adoId, fields) {
 			'Authorization': 'Bearer ' + token,
 			'Content-Type': 'application/json-patch+json'
 		},
-		body: fields
+		body: JSON.stringify(fields)
 	});
 	const json = await response.json();
 	console.log("updateWorkItem result: " + JSON.stringify(json));
@@ -82,7 +82,7 @@ export async function createWorkItem(workItemType, fields) {
 			'Authorization': 'Bearer ' + token,
 			'Content-Type': 'application/json-patch+json'
 		},
-		body: fields
+		body: JSON.stringify(fields)
 	});
 	const json = await response.json();
 	console.log("createWorkItem result: " + JSON.stringify(json));
