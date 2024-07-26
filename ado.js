@@ -23,8 +23,9 @@ async function initToken() {
 
 export async function queryByWiql(query) {
     // Make REST call to ADO wiql API
+	const jsonQuery = JSON.stringify(query);
     console.log("\nStarting REST call to ADO wiql API");
-	console.log("Wiql Query: " + query);
+	console.log("Wiql Query: " + jsonQuery);
     const apiurl = projecturl + "/_apis/wit/wiql?api-version=7.1";
     const response = await fetch(apiurl, {
         method: 'POST',
@@ -32,7 +33,7 @@ export async function queryByWiql(query) {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(query)
+        body: jsonQuery
     });
 	const json = await response.json();
 	console.log("Query result: " + JSON.stringify(json));
