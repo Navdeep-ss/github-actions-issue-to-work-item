@@ -136,7 +136,7 @@ async function formatDescription(payload) {
 	console.log('Creating a description based on the github issue');
 	const octokit = new github.GitHub(process.env.github_token);
 	const bodyWithMarkdown = await octokit.markdown.render({
-		text: payload.issue.body,
+		text: payload.issue.body ?? "",
 		mode: 'gfm',
 		context: payload.repository.full_name
 	});
