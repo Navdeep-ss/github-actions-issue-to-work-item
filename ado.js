@@ -1,4 +1,4 @@
-import * as fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import * as core from '@actions/core';
 import { AzureCliCredential } from '@azure/identity';
 
