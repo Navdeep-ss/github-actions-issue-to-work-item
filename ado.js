@@ -6,7 +6,7 @@ const token = await initToken();
 
 const ado_organization = core.getInput('ado_organization');
 const ado_project = core.getInput('ado_project');
-const projecturl = "https://dev.azure.com/" + ado_organization + "/" + ado_project;
+const projectUrl = "https://dev.azure.com/" + ado_organization + "/" + ado_project;
 
 async function initToken() {
     // Get the Federated Credential token from az login
@@ -26,7 +26,7 @@ export async function queryByWiql(query) {
 	const jsonQuery = JSON.stringify(query);
     console.log("\nStarting REST call to ADO wiql API");
 	console.log("Wiql Query: " + jsonQuery);
-    const apiurl = projecturl + "/_apis/wit/wiql?api-version=7.1";
+    const apiurl = projectUrl + "/_apis/wit/wiql?api-version=7.1";
     const response = await fetch(apiurl, {
         method: 'POST',
         headers: {
@@ -43,7 +43,7 @@ export async function queryByWiql(query) {
 export async function getWorkItem(adoId) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: GET");
-	const apiurl = projecturl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
+	const apiurl = projectUrl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
 	const response = await fetch(apiurl, {
 		method: 'GET',
 		headers: {
@@ -58,7 +58,7 @@ export async function getWorkItem(adoId) {
 export async function updateWorkItem(adoId, fields) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: PATCH");
-	const apiurl = projecturl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
+	const apiurl = projectUrl + "/_apis/wit/workitems/" + adoId + "?api-version=7.1";
 	const response = await fetch(apiurl, {
 		method: 'PATCH',
 		headers: {
@@ -75,7 +75,7 @@ export async function updateWorkItem(adoId, fields) {
 export async function createWorkItem(workItemType, fields) {
 	// Make REST call to ADO workitems API
 	console.log("\nStarting REST call to ADO workitems API: POST");
-	const apiurl = projecturl + "/_apis/wit/workitems/$" + workItemType + "?api-version=7.1";
+	const apiurl = projectUrl + "/_apis/wit/workitems/$" + workItemType + "?api-version=7.1";
 	const response = await fetch(apiurl, {
 		method: 'POST',
 		headers: {
