@@ -49,7 +49,7 @@ async function main() {
 
 		// if workItem == -1 then we have an error during find
 		if (workItem === -1) {
-			core.setFailed();
+			core.setFailed("Error finding work item");
 			return;
 		}
 
@@ -62,7 +62,7 @@ async function main() {
 
 				// if workItem == -1 then we have an error during create
 				if (workItem === -1) {
-					core.setFailed();
+					core.setFailed("Error creating work item");
 					return;
 				}
 
@@ -124,11 +124,11 @@ async function main() {
 		// set output message
 		if (workItem != null || workItem != undefined) {
 			console.log(`Work item successfully created or updated: ${workItem.id}`);
-			core.setOutput(`id`, `${workItem.id}`);
+			core.setOutput('id', String(workItem.id));
 		}
 	} catch (error) {
 		console.log("Error: " + error);
-		core.setFailed();
+		core.setFailed(error.message || String(error));
 	}
 }
 
@@ -224,7 +224,7 @@ async function create(vm, wit) {
 
 			console.log("Error: creatWorkItem failed");
 			console.log(`WIT may not be correct: ${wit}`);
-			core.setFailed();
+			core.setFailed("Failed to create work item");
 		} else {
 			console.log("Work item successfully created");
 		}
@@ -234,7 +234,7 @@ async function create(vm, wit) {
 		console.log("Error: creatWorkItem failed");
 		console.log(patchDocument);
 		console.log(error);
-		core.setFailed(error);
+		core.setFailed(error.message || String(error));
 	}
 
 	if (workItemSaveResult != -1) {
@@ -470,7 +470,7 @@ async function find(vm) {
 		console.log(
 			"Error: Connecting to organization. Check the spelling of the organization name and ensure your token is scoped correctly."
 		);
-		core.setFailed(error);
+		core.setFailed(error.message || String(error));
 		return -1;
 	}
 
@@ -496,7 +496,7 @@ async function find(vm) {
 	} catch (error) {
 		console.log("Error: queryByWiql failure");
 		console.log(error);
-		core.setFailed(error);
+		core.setFailed(error.message || String(error));
 		return -1;
 	}
 
@@ -510,7 +510,7 @@ async function find(vm) {
 			return result;
 		} catch (error) {
 			console.log("Error: getWorkItem failure");
-			core.setFailed(error);
+			core.setFailed(error.message || String(error));
 			return -1;
 		}
 	} else {
@@ -539,7 +539,7 @@ async function updateWorkItem(patchDocument, id, env) {
 	} catch (error) {
 		console.log("Error: updateWorkItem failed");
 		console.log(patchDocument);
-		core.setFailed(error);
+		core.setFailed(error.message || String(error));
 	}
 }
 
@@ -549,13 +549,13 @@ async function updateIssueBody(vm, workItem) {
 	var hasLink = vm.body.includes("AB#" + workItem.id);
 
 	if (!hasLink) {
-		const octokit = new github.GitHub(vm.env.ghToken);
+		const octokit = github.getOctokit(vm.env.ghToken);
 		vm.body = vm.body + "\r\n\r\nAB#" + workItem.id;
 
 		console.log("Attempting update");
 		try {
 			console.log(vm);
-			var result = await octokit.issues.update({
+			var result = await octokit.rest.issues.update({
 				owner: vm.owner,
 				repo: vm.repository,
 				issue_number: vm.number,
@@ -565,7 +565,7 @@ async function updateIssueBody(vm, workItem) {
 			return result;
 		} catch (error) {
 			console.log("Error: failed to update issue");
-			core.setFailed(error);
+			core.setFailed(error.message || String(error));
 		}
 	}
 
