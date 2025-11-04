@@ -134,8 +134,8 @@ function formatTitle(githubIssue) {
 
 async function formatDescription(payload) {
 	console.log('Creating a description based on the github issue');
-	const octokit = new github.GitHub(process.env.github_token);
-	const bodyWithMarkdown = await octokit.markdown.render({
+	const octokit = github.getOctokit(process.env.github_token);
+	const bodyWithMarkdown = await octokit.rest.markdown.render({
 		text: payload.issue.body ?? "",
 		mode: 'gfm',
 		context: payload.repository.full_name
@@ -259,7 +259,7 @@ async function createAdoWorkItem(payload) {
 			workItemSaveResult = -1;
 
 			console.log("Error: createWorkItem failed");
-			console.log(`WIT may not be correct: ${wit}`);
+			console.log(`WIT may not be correct: ${workItemType}`);
 			core.setFailed();
 		} else {
 			console.log("Work item successfully created");
@@ -354,13 +354,13 @@ async function findAdoIdFromAdo(ghIssueId) {
 // This should only get called when the issue is created.
 async function updateIssueBody(payload, adoId) {
 
-	const octokit = new github.GitHub(process.env.github_token);
+	const octokit = github.getOctokit(process.env.github_token);
 	
 	let issueBody = payload.issue.body + "\r\n\r\nAB#" + adoId;
 
 	console.log("Adding 'AB#<id>' link to the issue body");
 	try {
-		var result = await octokit.issues.update({
+		var result = await octokit.rest.issues.update({
 			owner: payload.repository.owner.login,
 			repo: payload.repository.name,
 			issue_number: payload.issue.number,
