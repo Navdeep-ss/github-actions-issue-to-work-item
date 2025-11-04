@@ -270,7 +270,7 @@ async function createAdoWorkItem(payload) {
 		console.log("Error: createWorkItem failed");
 		console.log(patchDocument);
 		console.log(error);
-		core.setFailed(error);
+		core.setFailed();
 	}
 
 	if (workItemSaveResult != -1) {
@@ -307,7 +307,7 @@ async function findAdoIdFromAdo(ghIssueId) {
 	} catch (error) {
 		console.log("Error: queryByWiql failure");
 		console.log(error);
-		core.setFailed(error);
+		core.setFailed();
 		return -1;
 	}
 	console.log("Query result: " + queryResult);
@@ -370,7 +370,8 @@ async function updateIssueBody(payload, adoId) {
 		return result;
 	} catch (error) {
 		console.log("Error: failed to update issue");
-		core.setFailed(error);
+		console.log(error);
+		core.setFailed();
 	}
 
 	return null;
