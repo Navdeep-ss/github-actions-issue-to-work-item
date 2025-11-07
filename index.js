@@ -92,6 +92,8 @@ async function handleLabeled(payload) {
 	}
 
 	try {
+		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
+		
 		// Search for an existing ADO item with "GitHub #<id>" in the title
 		console.log("Check to see if work item already exists");
 		let adoId = await findAdoIdFromAdo(payload.issue.number);
@@ -100,8 +102,8 @@ async function handleLabeled(payload) {
 		} else {
 			console.log("Found existing ADO workitem: " + adoId + ". No need to create a new one");
 			
-			// Update the GitHub issue body with the workitem id if it wasn't already there
-			if (adoIdFromIssue == -1) {
+			// Update the GitHub issue body with the workitem id if it wasn't already there and if enabled
+			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
 				updateIssueBody(payload, adoId);
 			}
 			return;
@@ -114,8 +116,8 @@ async function handleLabeled(payload) {
 		if (workItem != null || workItem != undefined) {
 			console.log(`Work item successfully created or found: ${workItem.id}`);
 
-			// Update the GitHub issue body with the workitem id
-			if (adoIdFromIssue == -1) {
+			// Update the GitHub issue body with the workitem id if enabled
+			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
 				updateIssueBody(payload, workItem.id);
 			}
 

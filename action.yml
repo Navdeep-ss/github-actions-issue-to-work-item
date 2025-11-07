@@ -26,6 +26,10 @@ inputs:
   ado_area_path:
     description: 'The area path under which the work item should be created'
     required: true
+  update_issue_body:
+    description: 'Whether to update the GitHub issue body with the ADO work item ID (AB#<id>). Defaults to true'
+    required: false
+    default: 'true'
 outputs:
   id:
     description: "id of work item created"
