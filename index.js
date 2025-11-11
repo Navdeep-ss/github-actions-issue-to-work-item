@@ -27,6 +27,7 @@ async function main() {
 		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
 		await syncIssueToAdo(payload.issue, payload.repository, shouldUpdateIssueBody);
 	} else {
+		console.log(payload.issue.labels);
 		console.log(`This issue is not a regression and Action was not expected for payload.action = ${payload.action}. Nothing to do. Exiting.`);
 		return;
 	}
