@@ -14,14 +14,20 @@ async function main() {
 
 	// If not the correct labelling, quit
 	if (payload.action === 'labeled') {
-		await handleLabeled(payload);
+		// Check if the label matches the filter before processing
+		if (payload.label.name !== core.getInput('label')) {
+			console.log(`Action was 'labeled' but label was not in filter = ${core.getInput('label')}. Nothing to do.`);
+			return;
+		}
+		
+		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
+		await syncIssueToAdo(payload.issue, payload.repository, shouldUpdateIssueBody);
 	} else if (payload.action === 'closed' || payload.action === 'reopened') {
 		await handleIssue(payload);
 	} else {
 		console.log(`Action was not expected for payload.action = ${payload.action}. Nothing to do. Exiting.`);
 		return;
 	}
-	console.log("hellothere ")
 }
 
 async function handleIssue(payload) {
@@ -82,15 +88,9 @@ async function handleIssue(payload) {
 	}
 }
 
-async function handleLabeled(payload) {
-	// We will only handle labeled events if the label matches the 'label' input filter.
-	if (payload.label.name !== core.getInput('label')) {
-		console.log(`Action was 'labeled' but label was not in filter = ${core.getInput('label')}. Nothing to do.`);
-		return;
-	}
-
+async function syncIssueToAdo(issue, repository, shouldUpdateIssueBody) {
 	// Look for existing ADO id in issue body
-	let adoIdFromIssue = await findAdoIdFromIssue(payload.issue.body);
+	let adoIdFromIssue = await findAdoIdFromIssue(issue.body);
 	if (adoIdFromIssue != -1) {
 		console.log("Found existing ADO id in GitHub issue body: " + adoIdFromIssue);
 		console.log("Won't try to create a new item.");
@@ -98,11 +98,9 @@ async function handleLabeled(payload) {
 	}
 
 	try {
-		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
-		
 		// Search for an existing ADO item with "GitHub #<id>" in the title
 		console.log("Check to see if work item already exists");
-		let adoId = await findAdoIdFromAdo(payload.issue.number);
+		let adoId = await findAdoIdFromAdo(issue.number);
 		if (adoId === -1) {
 			console.log("Could not find existing ADO workitem, creating one now");
 		} else {
@@ -110,13 +108,13 @@ async function handleLabeled(payload) {
 			
 			// Update the GitHub issue body with the workitem id if it wasn't already there and if enabled
 			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
-				updateIssueBody(payload, adoId);
+				updateIssueBody(issue, repository, adoId);
 			}
 			return;
 		}
 
 		// Try to create a new ADO item
-		let workItem = await createAdoWorkItem(payload);
+		let workItem = await createAdoWorkItem(issue, repository);
 
 		// Success!
 		if (workItem != null || workItem != undefined) {
@@ -124,7 +122,7 @@ async function handleLabeled(payload) {
 
 			// Update the GitHub issue body with the workitem id if enabled
 			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
-				updateIssueBody(payload, workItem.id);
+				updateIssueBody(issue, repository, workItem.id);
 			}
 
 			// Set output message
@@ -140,36 +138,36 @@ function formatTitle(githubIssue) {
 	return "[GitHub #" + githubIssue.number + "] " + githubIssue.title;
 }
 
-async function formatDescription(payload) {
+async function formatDescription(issue, repository) {
 	console.log('Creating a description based on the github issue');
 	const octokit = new github.GitHub(process.env.github_token);
 	const bodyWithMarkdown = await octokit.markdown.render({
-		text: payload.issue.body ?? "",
+		text: issue.body ?? "",
 		mode: 'gfm',
-		context: payload.repository.full_name
+		context: repository.full_name
 	});
 
 	return '________________________________________________________<br>' +
 		'<em>This item was auto-opened from GitHub <a href="' +
-		payload.issue.html_url +
+		issue.html_url +
 		'" target="_new">issue #' +
-		payload.issue.number +
+		issue.number +
 		"</a></em><br>" +
 		"It won't auto-update when the GitHub issue changes so please check the issue for updates.<br><br>" +
 		"<strong>Initial description from GitHub (check issue for more info):</strong><br><br>" +
 		bodyWithMarkdown.data;
 }
 
-async function createAdoWorkItem(payload) {
-	const botMessage = await formatDescription(payload);
-	const shortRepoName = payload.repository.full_name.split("/")[1];
+async function createAdoWorkItem(issue, repository) {
+	const botMessage = await formatDescription(issue, repository);
+	const shortRepoName = repository.full_name.split("/")[1];
 	let tags = core.getInput("ado_tags") ? core.getInput("ado_tags") + ";" + shortRepoName : shortRepoName;
-	const isFeature = payload.issue.labels.some((label) => label.name === 'enhancement' || label.name === 'feature' || label.name === 'feature request');
-	let title = formatTitle(payload.issue);
+	const isFeature = issue.labels.some((label) => label.name === 'enhancement' || label.name === 'feature' || label.name === 'feature request');
+	let title = formatTitle(issue);
 	let priority = null;
 	
 	// If this was tagged as a privacy issue, add the "WV2_Privacy" tag and mark it as a Priority 0 bug.
-	const isPrivacy = payload.issue.labels.some((label) => label.name === 'privacy');
+	const isPrivacy = issue.labels.some((label) => label.name === 'privacy');
 	if (isPrivacy) {
 		tags += ";WV2_Privacy";
 		title = "[Privacy]" + title;
@@ -177,14 +175,14 @@ async function createAdoWorkItem(payload) {
 	}
 
 	// If this was tagged as a regression issue, add the "WV2_Regression" tag and mark it as a Priority 0 bug.
-	const isRegression = payload.issue.labels.some((label) => label.name === 'regression');
+	const isRegression = issue.labels.some((label) => label.name === 'regression');
 	if (isRegression) {
 		tags += ";WV2_Regression";
 		title = "[Regression]" + title;
 		priority = 0;
 	}
 
-	console.log(`Starting to create work item for GitHub issue #${payload.issue.number}`);
+	console.log(`Starting to create work item for GitHub issue #${issue.number}`);
 
 	const patchDocument = [
 		{
@@ -212,7 +210,7 @@ async function createAdoWorkItem(payload) {
 			path: "/relations/-",
 			value: {
 				rel: "Hyperlink",
-				url: payload.issue.html_url,
+				url: issue.html_url,
 			},
 		},
 		{
@@ -360,18 +358,18 @@ async function findAdoIdFromAdo(ghIssueId) {
 
 // Update the GH issue body to include the AB# so that we link the Work Item to the Issue.
 // This should only get called when the issue is created.
-async function updateIssueBody(payload, adoId) {
+async function updateIssueBody(issue, repository, adoId) {
 
 	const octokit = new github.GitHub(process.env.github_token);
 	
-	let issueBody = payload.issue.body + "\r\n\r\nAB#" + adoId;
+	let issueBody = issue.body + "\r\n\r\nAB#" + adoId;
 
 	console.log("Adding 'AB#<id>' link to the issue body");
 	try {
 		var result = await octokit.issues.update({
-			owner: payload.repository.owner.login,
-			repo: payload.repository.name,
-			issue_number: payload.issue.number,
+			owner: repository.owner.login,
+			repo: repository.name,
+			issue_number: issue.number,
 			body: issueBody,
 		});
 
