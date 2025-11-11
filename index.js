@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 
 // Use mock ADO for testing on branches without Azure access
 const useMock = process.env.USE_MOCK_ADO === 'true' || core.getInput('use_mock_ado') === 'true';
-const ado = useMock 
+const ado = useMock
 	? await import('./ado.mock.js')
 	: await import('./ado.js');
 
@@ -19,13 +19,15 @@ async function main() {
 			console.log(`Action was 'labeled' but label was not in filter = ${core.getInput('label')}. Nothing to do.`);
 			return;
 		}
-		
 		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
 		await syncIssueToAdo(payload.issue, payload.repository, shouldUpdateIssueBody);
 	} else if (payload.action === 'closed' || payload.action === 'reopened') {
 		await handleIssue(payload);
+	} else if (payload.issue.labels.some((label) => label.name === 'regression')) {
+		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
+		await syncIssueToAdo(payload.issue, payload.repository, shouldUpdateIssueBody);
 	} else {
-		console.log(`Action was not expected for payload.action = ${payload.action}. Nothing to do. Exiting.`);
+		console.log(`This issue is not a regression and Action was not expected for payload.action = ${payload.action}. Nothing to do. Exiting.`);
 		return;
 	}
 }
@@ -46,6 +48,9 @@ async function handleIssue(payload) {
 		core.setFailed();
 		return;
 	}
+
+	// Sync tags from GitHub issue to ADO work item
+	await syncTagsToWorkItem(adoIdFromIssue, payload.issue);
 
 	// Get the current tags from the work item
 	let tags = adoWorkItem.fields["System.Tags"] ?? [];
@@ -88,12 +93,38 @@ async function handleIssue(payload) {
 	}
 }
 
+async function syncTagsToWorkItem(adoId, issue) {
+	// Get current work item to check tags
+	const existingWorkItem = await ado.getWorkItem(adoId);
+	const currentTags = existingWorkItem.fields["System.Tags"] || "";
+	const expectedTags = getTagsForIssue(issue);
+
+	// Update tags if they're different
+	if (currentTags !== expectedTags) {
+		console.log(`Updating tags on work item ${adoId}`);
+		console.log(`Current tags: "${currentTags}"`);
+		console.log(`Expected tags: "${expectedTags}"`);
+
+		const patchDocument = [{
+			op: "add",
+			path: "/fields/System.Tags",
+			value: expectedTags,
+		}];
+
+		await ado.updateWorkItem(adoId, patchDocument);
+		console.log("Tags updated successfully");
+	} else {
+		console.log("Tags are already up to date");
+	}
+}
+
 async function syncIssueToAdo(issue, repository, shouldUpdateIssueBody) {
 	// Look for existing ADO id in issue body
 	let adoIdFromIssue = await findAdoIdFromIssue(issue.body);
 	if (adoIdFromIssue != -1) {
 		console.log("Found existing ADO id in GitHub issue body: " + adoIdFromIssue);
-		console.log("Won't try to create a new item.");
+		console.log("Syncing tags to existing work item.");
+		await syncTagsToWorkItem(adoIdFromIssue, issue);
 		return;
 	}
 
@@ -104,8 +135,9 @@ async function syncIssueToAdo(issue, repository, shouldUpdateIssueBody) {
 		if (adoId === -1) {
 			console.log("Could not find existing ADO workitem, creating one now");
 		} else {
-			console.log("Found existing ADO workitem: " + adoId + ". No need to create a new one");
-			
+			console.log("Found existing ADO workitem: " + adoId + ". Syncing tags.");
+			await syncTagsToWorkItem(adoId, issue);
+
 			// Update the GitHub issue body with the workitem id if it wasn't already there and if enabled
 			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
 				updateIssueBody(issue, repository, adoId);
@@ -138,6 +170,25 @@ function formatTitle(githubIssue) {
 	return "[GitHub #" + githubIssue.number + "] " + githubIssue.title;
 }
 
+function getTagsForIssue(issue) {
+	const shortRepoName = github.context.payload.repository.full_name.split("/")[1];
+	let tags = core.getInput("ado_tags") ? core.getInput("ado_tags") + ";" + shortRepoName : shortRepoName;
+
+	// If this was tagged as a privacy issue, add the "WV2_Privacy" tag
+	const isPrivacy = issue.labels.some((label) => label.name === 'privacy');
+	if (isPrivacy) {
+		tags += ";WV2_Privacy";
+	}
+
+	// If this was tagged as a regression issue, add the "WV2_Regression" tag
+	const isRegression = issue.labels.some((label) => label.name === 'regression');
+	if (isRegression) {
+		tags += ";WV2_Regression";
+	}
+
+	return tags;
+}
+
 async function formatDescription(issue, repository) {
 	console.log('Creating a description based on the github issue');
 	const octokit = new github.GitHub(process.env.github_token);
@@ -160,24 +211,21 @@ async function formatDescription(issue, repository) {
 
 async function createAdoWorkItem(issue, repository) {
 	const botMessage = await formatDescription(issue, repository);
-	const shortRepoName = repository.full_name.split("/")[1];
-	let tags = core.getInput("ado_tags") ? core.getInput("ado_tags") + ";" + shortRepoName : shortRepoName;
+	let tags = getTagsForIssue(issue);
 	const isFeature = issue.labels.some((label) => label.name === 'enhancement' || label.name === 'feature' || label.name === 'feature request');
 	let title = formatTitle(issue);
 	let priority = null;
-	
-	// If this was tagged as a privacy issue, add the "WV2_Privacy" tag and mark it as a Priority 0 bug.
+
+	// If this was tagged as a privacy issue, mark it as a Priority 0 bug and update title
 	const isPrivacy = issue.labels.some((label) => label.name === 'privacy');
 	if (isPrivacy) {
-		tags += ";WV2_Privacy";
 		title = "[Privacy]" + title;
 		priority = 0;
 	}
 
-	// If this was tagged as a regression issue, add the "WV2_Regression" tag and mark it as a Priority 0 bug.
+	// If this was tagged as a regression issue, mark it as a Priority 0 bug and update title
 	const isRegression = issue.labels.some((label) => label.name === 'regression');
 	if (isRegression) {
-		tags += ";WV2_Regression";
 		title = "[Regression]" + title;
 		priority = 0;
 	}
@@ -214,12 +262,10 @@ async function createAdoWorkItem(issue, repository) {
 			},
 		},
 		{
-			// Add this to avoid false positives in secret scanning from the
-			// way image links are created in GH.
 			op: "add",
 			path: "/fields/System.History",
 			value: "**BYPASS_SECRET_SCANNING**"
-		 }
+		}
 	];
 
 	if (core.getInput('parent_work_item')) {
@@ -336,32 +382,31 @@ async function findAdoIdFromAdo(ghIssueId) {
  * @param {string} issueBody the GitHub issue body.
  * @returns {number} The corresponding ADO work item id, if any was found, or -1.
  */
- async function findAdoIdFromIssue(issueBody) {
-    // We expect our GitHub issues to contain the ADO number in the issue body.
-    // The ADO number should be in the format "AB#12345".
-    // The logic below will extract the last instance of this format in the issue body.
+async function findAdoIdFromIssue(issueBody) {
+	// We expect our GitHub issues to contain the ADO number in the issue body.
+	// The ADO number should be in the format "AB#12345".
+	// The logic below will extract the last instance of this format in the issue body.
 
 	console.log("Looking for ADO link in issue body");
 	if (!issueBody) {
 		console.log("No issue body found.");
 		return -1;
 	}
-    const matches = issueBody.matchAll(/AB#([0-9]+)/g);
-    const lastRef = [...matches].pop();
-    if (!lastRef) {
-        console.log("No ADO link found in issue body.");
-        return -1;
-    }
-    
-    return lastRef[1];
+	const matches = issueBody.matchAll(/AB#([0-9]+)/g);
+	const lastRef = [...matches].pop();
+	if (!lastRef) {
+		console.log("No ADO link found in issue body.");
+		return -1;
+	}
+
+	return lastRef[1];
 }
 
 // Update the GH issue body to include the AB# so that we link the Work Item to the Issue.
 // This should only get called when the issue is created.
 async function updateIssueBody(issue, repository, adoId) {
-
 	const octokit = new github.GitHub(process.env.github_token);
-	
+
 	let issueBody = issue.body + "\r\n\r\nAB#" + adoId;
 
 	console.log("Adding 'AB#<id>' link to the issue body");
