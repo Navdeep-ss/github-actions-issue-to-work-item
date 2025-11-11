@@ -1,6 +1,11 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import * as ado from './ado.js';
+
+// Use mock ADO for testing on branches without Azure access
+const useMock = process.env.USE_MOCK_ADO === 'true' || core.getInput('use_mock_ado') === 'true';
+const ado = useMock 
+	? await import('./ado.mock.js')
+	: await import('./ado.js');
 
 async function main() {
 	const payload = github.context.payload;

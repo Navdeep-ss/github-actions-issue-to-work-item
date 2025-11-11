@@ -30,6 +30,10 @@ inputs:
     description: 'Whether to update the GitHub issue body with the ADO work item ID (AB#<id>). Defaults to true'
     required: false
     default: 'true'
+  use_mock_ado:
+    description: 'Use mock ADO implementation for testing without Azure access. Defaults to false'
+    required: false
+    default: 'true'
 outputs:
   id:
     description: "id of work item created"
