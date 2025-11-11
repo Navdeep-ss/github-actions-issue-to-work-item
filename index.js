@@ -12,6 +12,16 @@ async function main() {
 
 	console.log("Running ADO Creation workflow for payload: " + JSON.stringify(payload));
 
+	// Extract issue and its labels early for easier access
+	const issue = payload.issue;
+	if (!issue) {
+		console.log("No issue found in payload. Nothing to do.");
+		return;
+	}
+
+	const labels = issue.labels || [];
+	const labelNames = labels.map(label => label.name);
+
 	// If not the correct labelling, quit
 	if (payload.action === 'labeled') {
 		// Check if the label matches the filter before processing
@@ -20,14 +30,14 @@ async function main() {
 			return;
 		}
 		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
-		await syncIssueToAdo(payload.issue, payload.repository, shouldUpdateIssueBody);
+		await syncIssueToAdo(issue, payload.repository, shouldUpdateIssueBody);
 	} else if (payload.action === 'closed' || payload.action === 'reopened') {
 		await handleIssue(payload);
-	} else if (payload.issue.labels.some((label) => label.name === 'regression')) {
+	} else if (labelNames.includes('regression')) {
 		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
-		await syncIssueToAdo(payload.issue, payload.repository, shouldUpdateIssueBody);
+		await syncIssueToAdo(issue, payload.repository, shouldUpdateIssueBody);
 	} else {
-		console.log(payload.issue.labels);
+		console.log("Current labels:", labelNames);
 		console.log(`This issue is not a regression and Action was not expected for payload.action = ${payload.action}. Nothing to do. Exiting.`);
 		return;
 	}
