@@ -21,6 +21,7 @@ async function main() {
 		console.log(`Action was not expected for payload.action = ${payload.action}. Nothing to do. Exiting.`);
 		return;
 	}
+	console.log("hellothere ")
 }
 
 async function handleIssue(payload) {
