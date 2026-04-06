@@ -358,7 +358,10 @@ async function updateIssueBody(payload, adoId) {
 
 	const octokit = new github.GitHub(process.env.github_token);
 	
-	let issueBody = payload.issue.body + "\r\n\r\nAB#" + adoId;
+	const adoOrg = core.getInput('ado_organization');
+	const adoProject = core.getInput('ado_project');
+	const adoUrl = `https://dev.azure.com/${adoOrg}/${adoProject}/_workitems/edit/${adoId}`;
+	let issueBody = payload.issue.body + `\r\n\r\n[AB#${adoId}](${adoUrl})`;
 
 	console.log("Adding 'AB#<id>' link to the issue body");
 	try {
