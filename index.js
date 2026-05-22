@@ -7,9 +7,10 @@ async function main() {
 
 	console.log("Running ADO Creation workflow for payload: " + JSON.stringify(payload));
 
-	// If not the correct labelling, quit
 	if (payload.action === 'labeled') {
 		await handleLabeled(payload);
+	} else if (payload.action === 'opened' || payload.action === 'edited') {
+		await handleOpenedOrEdited(payload);
 	} else if (payload.action === 'closed' || payload.action === 'reopened') {
 		await handleIssue(payload);
 	} else {
@@ -83,6 +84,24 @@ async function handleLabeled(payload) {
 		return;
 	}
 
+	await createIfNotExists(payload);
+}
+
+async function handleOpenedOrEdited(payload) {
+	// On 'opened' / 'edited' there is no payload.label. Gate on the issue's current labels instead,
+	// so we only act when the configured label is already present on the issue.
+	const targetLabel = core.getInput('label');
+	const labels = payload.issue?.labels ?? [];
+	if (!labels.some((l) => l.name === targetLabel)) {
+		console.log(`Issue does not have label '${targetLabel}'. Nothing to do.`);
+		return;
+	}
+
+	console.log(`Issue has label '${targetLabel}' on payload.action = '${payload.action}'. Ensuring ADO work item exists.`);
+	await createIfNotExists(payload);
+}
+
+async function createIfNotExists(payload) {
 	// Look for existing ADO id in issue body
 	let adoIdFromIssue = await findAdoIdFromIssue(payload.issue.body);
 	if (adoIdFromIssue != -1) {
@@ -93,7 +112,7 @@ async function handleLabeled(payload) {
 
 	try {
 		const shouldUpdateIssueBody = core.getInput('update_issue_body') !== 'false';
-		
+
 		// Search for an existing ADO item with "GitHub #<id>" in the title
 		console.log("Check to see if work item already exists");
 		let adoId = await findAdoIdFromAdo(payload.issue.number);
@@ -101,7 +120,7 @@ async function handleLabeled(payload) {
 			console.log("Could not find existing ADO workitem, creating one now");
 		} else {
 			console.log("Found existing ADO workitem: " + adoId + ". No need to create a new one");
-			
+
 			// Update the GitHub issue body with the workitem id if it wasn't already there and if enabled
 			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
 				updateIssueBody(payload, adoId);
