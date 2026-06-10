@@ -88,9 +88,26 @@ async function handleLabeled(payload) {
 }
 
 async function handleOpenedOrEdited(payload) {
-	// On 'opened' / 'edited' there is no payload.label. Gate on the issue's current labels instead,
-	// so we only act when the configured label is already present on the issue.
+	// On 'opened' / 'edited' there is no payload.label, and payload.issue.labels is a
+	// snapshot captured when the event fired. When the configured label (e.g. 'regression')
+	// is added by another workflow (the issue labeler) DURING the same 'opened' run, that
+	// label is not present in this frozen payload, so we would incorrectly do nothing.
+	// Fetch the issue's CURRENT labels from the API and use those for both the gate below
+	// and the downstream tag/priority logic in createAdoWorkItem.
 	const targetLabel = core.getInput('label');
+
+	try {
+		const octokit = new github.GitHub(process.env.github_token);
+		const liveLabels = await octokit.issues.listLabelsOnIssue({
+			owner: payload.repository.owner.login,
+			repo: payload.repository.name,
+			issue_number: payload.issue.number,
+		});
+		payload.issue.labels = liveLabels.data;
+	} catch (error) {
+		console.log("Warning: could not fetch current labels from the API, falling back to the event payload labels. Error: " + error);
+	}
+
 	const labels = payload.issue?.labels ?? [];
 	if (!labels.some((l) => l.name === targetLabel)) {
 		console.log(`Issue does not have label '${targetLabel}'. Nothing to do.`);
