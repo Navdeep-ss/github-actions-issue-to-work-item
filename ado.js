@@ -86,5 +86,9 @@ export async function createWorkItem(workItemType, fields) {
 	});
 	const json = await response.json();
 	console.log("createWorkItem result: " + JSON.stringify(json));
+	if (!response.ok) {
+		console.log(`Error: ADO createWorkItem failed with status ${response.status}: ${json.message ?? response.statusText}`);
+		return null;
+	}
 	return json;
 }

@@ -149,7 +149,7 @@ async function createIfNotExists(payload) {
 		let workItem = await createAdoWorkItem(payload);
 
 		// Success!
-		if (workItem != null || workItem != undefined) {
+		if (workItem != null && workItem != -1 && workItem.id != undefined) {
 			console.log(`Work item successfully created or found: ${workItem.id}`);
 
 			// Update the GitHub issue body with the workitem id if enabled
@@ -212,6 +212,11 @@ async function createAdoWorkItem(payload) {
 		tags += ";WV2_Regression";
 		title = "[Regression]" + title;
 		priority = 0;
+	}
+
+	// ADO System.Title has a maximum length of 255 characters.
+	if (title.length > 255) {
+		title = title.slice(0, 252) + "...";
 	}
 
 	console.log(`Starting to create work item for GitHub issue #${payload.issue.number}`);
@@ -292,8 +297,8 @@ async function createAdoWorkItem(payload) {
 		const workItemType = isFeature ? 'Scenario' : 'Bug';
 		workItemSaveResult = await ado.createWorkItem(workItemType, patchDocument);
 
-		// if result is null, save did not complete correctly
-		if (workItemSaveResult == null) {
+		// if result is null or missing an id, save did not complete correctly
+		if (workItemSaveResult == null || workItemSaveResult.id == undefined) {
 			workItemSaveResult = -1;
 
 			console.log("Error: createWorkItem failed");
