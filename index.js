@@ -154,15 +154,17 @@ async function createIfNotExists(payload) {
 
 			// Update the GitHub issue body with the workitem id if enabled
 			if (adoIdFromIssue == -1 && shouldUpdateIssueBody) {
-				updateIssueBody(payload, workItem.id);
+				await updateIssueBody(payload, workItem.id);
 			}
 
 			// Set output message
 			core.setOutput(`id`, `${workItem.id}`);
+		} else {
+			core.setFailed(`Failed to create ADO work item for GitHub issue #${payload.issue.number}.`);
 		}
 	} catch (error) {
 		console.log("Error: " + error);
-		core.setFailed();
+		core.setFailed(error?.message || String(error));
 	}
 }
 
@@ -342,16 +344,13 @@ async function findAdoIdFromAdo(ghIssueId) {
 		queryResult = await ado.queryByWiql(wiql, { project: core.getInput('ado_project') });
 
 		// if query results = null then i think we have issue with the project name
-		if (queryResult == null) {
-			console.log("Error: Project name appears to be invalid");
-			core.setFailed("Error: Project name appears to be invalid");
-			return -1;
+		if (queryResult == null || !Array.isArray(queryResult.workItems)) {
+			throw new Error("ADO WIQL query did not return a valid workItems array.");
 		}
 	} catch (error) {
 		console.log("Error: queryByWiql failure");
 		console.log(error);
-		core.setFailed();
-		return -1;
+		throw error;
 	}
 	console.log("Query result: " + queryResult);
 
@@ -423,4 +422,7 @@ async function updateIssueBody(payload, adoId) {
 	return null;
 }
 
-main();
+main().catch((error) => {
+	console.log("Unhandled error: " + error);
+	core.setFailed(error?.message || String(error));
+});
